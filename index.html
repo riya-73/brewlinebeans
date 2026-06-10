@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Menu — Brewline Coffee Co.</title>
+  <meta name="description" content="Explore our handcrafted coffees, teas, frappes, pastries and sandwiches." />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<script src="data.js"></script>
+<script src="layout.js"></script>
+<script>
+renderLayout('index.html');
+
+const categories = ["All", "Hot Coffees", "Cold Coffees", "Teas", "Frappes", "Pastries", "Sandwiches"];
+let activeCat = "All";
+let searchQ = "";
+let openId = null;
+
+const content = document.getElementById('page-content');
+content.innerHTML = `
+  <!-- Hero -->
+  <section style="position:relative;overflow:hidden;">
+    <div class="container" style="padding-bottom:0;">
+      <div style="max-width:40rem;">
+        <span class="page-eyebrow">Since 2014</span>
+        <h1 class="page-title" style="font-size:clamp(2rem,5vw,3.5rem);line-height:1.2;margin-top:0.75rem;">
+          Crafted with care, <br/> served with warmth.
+        </h1>
+        <p class="page-desc" style="font-size:clamp(0.875rem,2vw,1.125rem);">
+          Single-origin beans, slow-brewed teas and bakery items made fresh each morning.
+          Explore the menu and tap any item to see what goes into your cup.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Filters + Search -->
+  <div class="container" style="padding-top:2rem;">
+    <div class="filters-bar">
+      <div class="filter-scroll" id="cat-filters">
+        ${categories.map(c => `
+          <button class="filter-pill${c === 'All' ? ' active' : ''}" data-cat="${c}">${c}</button>
+        `).join('')}
+      </div>
+      <div class="search-container">
+        <div class="search-wrap">
+          ${Icons.search}
+          <input id="menu-search" class="search-input" placeholder="Search the menu..." />
+        </div>
+      </div>
+    </div>
+    <!-- Grid -->
+    <div class="menu-grid" id="menu-grid"></div>
+  </div>
+`;
+
+function renderGrid() {
+  const grid = document.getElementById('menu-grid');
+  const items = menuItems.filter(m =>
+    (activeCat === 'All' || m.category === activeCat) &&
+    (searchQ === '' || m.name.toLowerCase().includes(searchQ.toLowerCase()))
+  );
+
+  grid.innerHTML = items.map(m => `
+    <article class="menu-card" id="menu-${m.id}" data-menu-id="${m.id}" data-category="${m.category}" data-price="${m.price}" data-available="${m.available}">
+      <div class="card-img-wrap">
+        <img class="card-img" src="${m.image}" alt="${m.name}" loading="lazy" />
+        <span class="card-badge-avail ${m.available ? 'available' : 'sold-out'}">${m.available ? 'Available' : 'Sold Out'}</span>
+        <span class="card-badge-cat">${m.category}</span>
+      </div>
+      <div class="card-body">
+        <div class="card-title-row">
+          <h3 class="card-name">${m.name}</h3>
+          <div class="card-price">₹${m.price}</div>
+        </div>
+        <p class="card-desc">${m.description}</p>
+        <button class="ingredient-toggle${openId === m.id ? ' open' : ''}" data-id="${m.id}" aria-expanded="${openId === m.id}">
+          <span>Ingredients per serving</span>
+          ${Icons.chevronDown}
+        </button>
+        <div class="ingredient-panel${openId === m.id ? ' open' : ''}" id="ing-${m.id}">
+          <ul class="ingredient-list">
+            ${m.ingredients.map(i => `
+              <li class="ingredient-row" data-ingredient="${i.name}" data-quantity="${i.quantity}" data-unit="${i.unit}">
+                <span class="ingredient-name">${i.name}</span>
+                <span class="ingredient-qty">${i.quantity} ${i.unit}</span>
+              </li>
+            `).join('')}
+          </ul>
+        </div>
+        <script type="application/json" data-menu-ingredients="${m.id}">${JSON.stringify(m.ingredients)}<\/script>
+      </div>
+    </article>
+  `).join('');
+
+  // attach toggle events
+  grid.querySelectorAll('.ingredient-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.id;
+      openId = openId === id ? null : id;
+      renderGrid();
+    });
+  });
+}
+
+document.getElementById('cat-filters').addEventListener('click', e => {
+  const btn = e.target.closest('.filter-pill');
+  if (!btn) return;
+  activeCat = btn.dataset.cat;
+  document.querySelectorAll('.filter-pill').forEach(b => b.classList.toggle('active', b.dataset.cat === activeCat));
+  renderGrid();
+});
+
+document.getElementById('menu-search').addEventListener('input', e => {
+  searchQ = e.target.value;
+  renderGrid();
+});
+
+renderGrid();
+</script>
+</body>
+</html>

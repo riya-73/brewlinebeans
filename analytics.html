@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Analytics — Brewline Coffee Co.</title>
+  <meta name="description" content="Supply chain analytics: inventory levels, monthly spend and supplier performance." />
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+<script src="data.js"></script>
+<script src="layout.js"></script>
+<script>
+renderLayout('analytics.html');
+
+// KPI calcs
+const low = inventory.filter(i => statusFor(i) === 'Low Stock').length;
+const critical = inventory.filter(i => statusFor(i) === 'Critical').length;
+const monthSpend = purchases.slice(0, 12).reduce((a, p) => a + p.totalCost, 0);
+const best = [...suppliers].sort((a, b) => b.qualityScore * b.reliability - a.qualityScore * a.reliability)[0];
+const avgQ = (suppliers.reduce((a, s) => a + s.qualityScore, 0) / suppliers.length).toFixed(2);
+
+function formatINR(n) { return n.toLocaleString('en-IN'); }
+
+document.getElementById('page-content').innerHTML = `
+  <div class="container">
+    <div style="margin-bottom:2rem;">
+      <span class="page-eyebrow">Insights</span>
+      <h1 class="page-title" style="font-size:clamp(1.75rem,4vw,2.5rem);">Analytics Dashboard</h1>
+      <p class="page-desc">A live pulse of inventory health, monthly spend and supplier performance.</p>
+    </div>
+
+    <!-- KPI row -->
+    <div class="stat-grid stat-grid-6" style="margin-bottom:2.5rem;">
+      <div class="card stat-card">
+        <div class="stat-card-top"><span class="stat-label">Total Items</span><span class="stat-icon primary">${Icons.package}</span></div>
+        <div class="stat-value" style="font-size:1.5rem;">${inventory.length}</div>
+      </div>
+      <div class="card stat-card">
+        <div class="stat-card-top"><span class="stat-label">Low Stock</span><span class="stat-icon warning">${Icons.alertTri}</span></div>
+        <div class="stat-value" style="font-size:1.5rem;">${low}</div>
+      </div>
+      <div class="card stat-card">
+        <div class="stat-card-top"><span class="stat-label">Critical</span><span class="stat-icon destructive">${Icons.alertOct}</span></div>
+        <div class="stat-value" style="font-size:1.5rem;">${critical}</div>
+      </div>
+      <div class="card stat-card">
+        <div class="stat-card-top"><span class="stat-label">Monthly Spend</span><span class="stat-icon primary">${Icons.wallet}</span></div>
+        <div class="stat-value" style="font-size:1.1rem;margin-top:0.75rem;">₹${formatINR(monthSpend)}</div>
+      </div>
+      <div class="card stat-card">
+        <div class="stat-card-top"><span class="stat-label">Best Supplier</span><span class="stat-icon primary">${Icons.award}</span></div>
+        <div class="stat-value" style="font-size:1rem;margin-top:0.75rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${best.name}</div>
+        <div class="stat-sub">${best.qualityScore.toFixed(1)} ★ · ${best.reliability}%</div>
+      </div>
+      <div class="card stat-card">
+        <div class="stat-card-top"><span class="stat-label">Avg Quality</span><span class="stat-icon primary">${Icons.star}</span></div>
+        <div class="stat-value" style="font-size:1.25rem;margin-top:0.75rem;">${avgQ} / 10</div>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="panel-grid">
+      <div class="card panel">
+        <div class="panel-header">
+          <div class="panel-title">Inventory Levels</div>
+          <div class="panel-sub">Current stock vs. reorder threshold</div>
+        </div>
+        <div class="chart-canvas-wrap" style="height:340px;">
+          <canvas id="invChart"></canvas>
+        </div>
+      </div>
+
+      <div class="card panel">
+        <div class="panel-header">
+          <div class="panel-title">Monthly Purchases</div>
+          <div class="panel-sub">Total spend by month (INR)</div>
+        </div>
+        <div class="chart-canvas-wrap" style="height:340px;">
+          <canvas id="monthChart"></canvas>
+        </div>
+      </div>
+
+      <div class="card panel span-2">
+        <div class="panel-header">
+          <div class="panel-title">Supplier Performance</div>
+          <div class="panel-sub">Top 10 by quality (avg) and reliability</div>
+        </div>
+        <div class="chart-canvas-wrap" style="height:360px;">
+          <canvas id="supplierChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+`;
+
+// Chart defaults
+Chart.defaults.font.family = "'Inter', sans-serif";
+Chart.defaults.color = 'oklch(0.5 0.03 50)';
+
+const gridColor = 'rgba(180,160,130,0.25)';
+
+// Inventory chart
+const invCtx = document.getElementById('invChart').getContext('2d');
+new Chart(invCtx, {
+  type: 'bar',
+  data: {
+    labels: inventory.map(i => i.name),
+    datasets: [
+      { label: 'Current Stock', data: inventory.map(i => i.currentStock), backgroundColor: 'oklch(0.32 0.06 45)', borderRadius: 6 },
+      { label: 'Reorder Level', data: inventory.map(i => i.reorderLevel), backgroundColor: 'oklch(0.7 0.13 55)', borderRadius: 6 },
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'top' }, tooltip: { callbacks: { title: t => t[0].label } } },
+    scales: {
+      x: { ticks: { maxRotation: 35, font: { size: 10 } }, grid: { color: gridColor } },
+      y: { grid: { color: gridColor } }
+    }
+  }
+});
+
+// Monthly chart
+const monthlyMap = new Map();
+purchases.forEach(p => {
+  const k = p.date.slice(0, 7);
+  monthlyMap.set(k, (monthlyMap.get(k) || 0) + p.totalCost);
+});
+const monthlyData = [...monthlyMap.entries()].sort().map(([month, total]) => ({ month, total }));
+
+const monthCtx = document.getElementById('monthChart').getContext('2d');
+new Chart(monthCtx, {
+  type: 'line',
+  data: {
+    labels: monthlyData.map(d => d.month),
+    datasets: [{
+      label: 'Monthly Spend',
+      data: monthlyData.map(d => d.total),
+      borderColor: 'oklch(0.32 0.06 45)',
+      backgroundColor: 'oklch(0.32 0.06 45 / 0.1)',
+      borderWidth: 3,
+      pointBackgroundColor: 'oklch(0.7 0.13 55)',
+      pointRadius: 4,
+      fill: true,
+      tension: 0.3,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: ctx => `₹${ctx.parsed.y.toLocaleString('en-IN')}` } }
+    },
+    scales: {
+      x: { grid: { color: gridColor } },
+      y: { grid: { color: gridColor }, ticks: { callback: v => `₹${(v/1000).toFixed(0)}k` } }
+    }
+  }
+});
+
+// Supplier performance chart
+const supMap = new Map();
+suppliers.forEach(s => {
+  const cur = supMap.get(s.name) || { name: s.name, quality: 0, reliability: 0, n: 0 };
+  cur.quality += s.qualityScore; cur.reliability += s.reliability; cur.n++;
+  supMap.set(s.name, cur);
+});
+const supData = [...supMap.values()]
+  .map(v => ({ name: v.name, quality: +(v.quality/v.n).toFixed(2), reliability: +(v.reliability/v.n).toFixed(1) }))
+  .sort((a,b) => b.quality - a.quality)
+  .slice(0, 10);
+
+const supCtx = document.getElementById('supplierChart').getContext('2d');
+new Chart(supCtx, {
+  type: 'bar',
+  data: {
+    labels: supData.map(d => d.name),
+    datasets: [
+      { label: 'Quality /10', data: supData.map(d => d.quality), backgroundColor: 'oklch(0.32 0.06 45)', borderRadius: 6, yAxisID: 'y' },
+      { label: 'Reliability %', data: supData.map(d => d.reliability), backgroundColor: 'oklch(0.7 0.13 55)', borderRadius: 6, yAxisID: 'y2' },
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'top' } },
+    scales: {
+      x: { ticks: { maxRotation: 25, font: { size: 11 } }, grid: { color: gridColor } },
+      y: { min: 0, max: 10, grid: { color: gridColor }, title: { display: false } },
+      y2: { position: 'right', min: 80, max: 100, grid: { drawOnChartArea: false } },
+    }
+  }
+});
+</script>
+</body>
+</html>

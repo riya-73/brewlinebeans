@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Purchase History — Brewline Coffee Co.</title>
+  <meta name="description" content="Historical purchase orders with ingredients, suppliers and totals." />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<script src="data.js"></script>
+<script src="layout.js"></script>
+<script>
+renderLayout('purchases.html');
+
+const grandTotal = purchases.reduce((a, p) => a + p.totalCost, 0);
+
+function formatINR(n) {
+  return n.toLocaleString('en-IN');
+}
+
+document.getElementById('page-content').innerHTML = `
+  <div class="container">
+    <div class="page-header-row">
+      <div>
+        <span class="page-eyebrow">Records</span>
+        <h1 class="page-title" style="font-size:clamp(1.75rem,4vw,2.5rem);">Purchase History</h1>
+        <p class="page-desc">${purchases.length} purchase orders logged.</p>
+      </div>
+      <div class="card spend-card">
+        <div class="spend-label">All-time spend</div>
+        <div class="spend-value">₹${formatINR(grandTotal)}</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table id="purchase-history-table" class="purchase-history-table">
+          <thead>
+            <tr>
+              <th>Order ID</th>
+              <th>Date</th>
+              <th>Ingredient</th>
+              <th class="right">Quantity</th>
+              <th>Supplier</th>
+              <th class="right">Total Cost</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${purchases.map(p => `
+              <tr id="purchase-row-${p.id}" class="purchase-row" data-order-id="${p.id}">
+                <td class="mono">${p.id}</td>
+                <td class="muted">${p.date}</td>
+                <td class="strong">${p.ingredient}</td>
+                <td class="right">${p.quantity} <span class="muted">${p.unit}</span></td>
+                <td style="color:oklch(0.22 0.04 45/0.8)">${p.supplier}</td>
+                <td class="right" style="font-weight:600;">₹${formatINR(p.totalCost)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+`;
+</script>
+</body>
+</html>

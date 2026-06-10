@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inventory — Brewline Coffee Co.</title>
+  <meta name="description" content="Live ingredient inventory, stock levels and reorder thresholds." />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<script src="data.js"></script>
+<script src="layout.js"></script>
+<script>
+renderLayout('inventory.html');
+
+const totals = {
+  total: inventory.length,
+  healthy: inventory.filter(i => statusFor(i) === 'Healthy').length,
+  low: inventory.filter(i => statusFor(i) === 'Low Stock').length,
+  critical: inventory.filter(i => statusFor(i) === 'Critical').length,
+};
+
+function statusBadgeClass(s) {
+  if (s === 'Critical') return 'critical';
+  if (s === 'Low Stock') return 'low';
+  return 'healthy';
+}
+
+document.getElementById('page-content').innerHTML = `
+  <div class="container">
+    <div class="page-header-row">
+      <div>
+        <span class="page-eyebrow">Operations</span>
+        <h1 class="page-title" style="font-size:clamp(1.75rem,4vw,2.5rem);">Inventory Dashboard</h1>
+        <p class="page-desc">Real-time stock levels across all ingredients with automated status flags.</p>
+      </div>
+    </div>
+
+    <!-- Stat cards -->
+    <div class="stat-grid stat-grid-4">
+      <div class="card stat-card">
+        <div class="stat-card-top">
+          <span class="stat-label">Total Items</span>
+          <span class="stat-icon primary">${Icons.package}</span>
+        </div>
+        <div class="stat-value">${totals.total}</div>
+      </div>
+      <div class="card stat-card">
+        <div class="stat-card-top">
+          <span class="stat-label">Healthy</span>
+          <span class="stat-icon success">${Icons.check}</span>
+        </div>
+        <div class="stat-value">${totals.healthy}</div>
+      </div>
+      <div class="card stat-card">
+        <div class="stat-card-top">
+          <span class="stat-label">Low Stock</span>
+          <span class="stat-icon warning">${Icons.alertTri}</span>
+        </div>
+        <div class="stat-value">${totals.low}</div>
+      </div>
+      <div class="card stat-card">
+        <div class="stat-card-top">
+          <span class="stat-label">Critical</span>
+          <span class="stat-icon destructive">${Icons.alertTri}</span>
+        </div>
+        <div class="stat-value">${totals.critical}</div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="card">
+      <div class="table-wrap">
+        <table id="inventory-table" class="inventory-table">
+          <thead>
+            <tr>
+              <th>Ingredient</th>
+              <th class="right">Current Stock</th>
+              <th class="right">Reorder Level</th>
+              <th>Unit</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${inventory.map(row => {
+              const status = statusFor(row);
+              return `
+                <tr id="inventory-row-${row.id}" class="inventory-row" data-ingredient-id="${row.id}" data-status="${status}">
+                  <td class="strong">${row.name}</td>
+                  <td class="right">${row.currentStock}</td>
+                  <td class="right muted">${row.reorderLevel}</td>
+                  <td class="muted">${row.unit}</td>
+                  <td><span class="badge ${statusBadgeClass(status)}">${status}</span></td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+`;
+</script>
+</body>
+</html>
