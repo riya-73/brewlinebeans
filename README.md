@@ -17,6 +17,10 @@
 - Pytest tests, Ruff linting, coverage reporting and GitHub Actions CI.
 - Existing static UI retained as a visual prototype while the API becomes the source of truth.
 - `live.html` provides an API-backed operations view for live inventory and reorder analysis.
+- `operations.html` provides API-backed batch, expiry and notification views.
+- All original pages now load their menu, inventory, supplier and purchase data through `data.js`, which reads the REST API and falls back to `data.static.js` only when the API is unavailable.
+- Budget-constrained supplier allocation is available at `POST /api/analytics/allocate`.
+- Batch and alert workflows are available under `/api/operations`.
 
 ## Quick start
 
@@ -78,6 +82,14 @@ ruff check app tests scripts
 ## Research roadmap
 
 The next research iteration should add daily sales data, time-series cross-validation, Holt-Winters/SARIMA/gradient-boosting comparisons, inventory-policy simulation, supplier-allocation constraints, confidence intervals and a usability study. The baseline should remain fixed-threshold replenishment plus cheapest-supplier selection.
+
+Generate the reproducible experiment report with:
+
+```bash
+python -m scripts.generate_experiment_report
+```
+
+The resulting methodology, metrics, results and limitations are documented in `docs/experiment-report.md`.
 
 ## License
 

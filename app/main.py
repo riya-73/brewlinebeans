@@ -4,13 +4,16 @@ from decimal import Decimal
 
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.analytics.forecasting import forecast, reorder_recommendation
 from app.analytics.suppliers import rank_suppliers
+from app.api.allocation import router as allocation_router
 from app.api.analytics import router as analytics_router
 from app.api.auth import router as auth_router
+from app.api.operations import router as operations_router
 from app.api.sales import router as sales_router
 from app.config import get_settings
 from app.db.models import (
@@ -51,6 +54,8 @@ app.add_middleware(CORSMiddleware, allow_origins=settings.cors_origin_list, allo
 app.include_router(auth_router)
 app.include_router(sales_router)
 app.include_router(analytics_router)
+app.include_router(allocation_router)
+app.include_router(operations_router)
 
 
 @app.get("/health", response_model=HealthRead, tags=["system"])
@@ -151,3 +156,6 @@ def reorder(ingredient_id: int, daily_demand: float = Query(default=1, gt=0), le
 def generate_forecast(ingredient_id: int, values: list[float], horizon: int = Query(default=7, ge=1, le=90), db: Session = Depends(get_db)) -> list[ForecastRead]:
     get_ingredient(db, ingredient_id)
     return [ForecastRead.model_validate({"ingredient_id": ingredient_id, **row}) for row in forecast(values, horizon)]
+
+
+app.mount("/", StaticFiles(directory=".", html=True), name="frontend")

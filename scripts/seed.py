@@ -1,7 +1,10 @@
+from datetime import date, timedelta
+
 from sqlalchemy import select
 
 from app.db.models import (
     Ingredient,
+    InventoryBatch,
     InventoryTransaction,
     MenuItem,
     RecipeIngredient,
@@ -54,6 +57,7 @@ def seed() -> None:
             db.add(Supplier(name=name, ingredient_id=ingredients[ingredient].id, price_per_unit=price, lead_time_days=lead, quality_score=quality, reliability=reliability))
         for item in ingredients.values():
             db.add(InventoryTransaction(ingredient_id=item.id, transaction_type="ADJUSTMENT", quantity=item.current_stock, reason="Initial seed stock"))
+            db.add(InventoryBatch(ingredient_id=item.id, lot_number=f"SEED-{item.id:03d}", quantity=item.current_stock, expires_on=date.today() + timedelta(days=item.shelf_life_days)))
         db.add(User(username="manager", password_hash=hash_password("BrewlineDemo123!"), role="manager"))
         db.commit()
         print(f"Seeded {len(ingredients)} ingredients and {len(supplier_data)} suppliers.")

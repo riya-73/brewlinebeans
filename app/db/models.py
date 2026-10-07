@@ -125,3 +125,27 @@ class AuditLog(Base):
     entity_id: Mapped[str | None] = mapped_column(String(80), nullable=True)
     details: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), index=True)
+
+
+class InventoryBatch(Base):
+    __tablename__ = "inventory_batches"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    ingredient_id: Mapped[int] = mapped_column(ForeignKey("ingredients.id"), index=True)
+    lot_number: Mapped[str] = mapped_column(String(80), index=True)
+    quantity: Mapped[Decimal] = mapped_column(Numeric(12, 3), default=0)
+    received_on: Mapped[date] = mapped_column(Date, default=date.today)
+    expires_on: Mapped[date] = mapped_column(Date, index=True)
+    status: Mapped[str] = mapped_column(String(20), default="ACTIVE", index=True)
+    ingredient: Mapped[Ingredient] = relationship()
+
+
+class Notification(Base):
+    __tablename__ = "notifications"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    notification_type: Mapped[str] = mapped_column(String(40), index=True)
+    severity: Mapped[str] = mapped_column(String(20), default="INFO")
+    message: Mapped[str] = mapped_column(Text)
+    ingredient_id: Mapped[int | None] = mapped_column(ForeignKey("ingredients.id"), nullable=True)
+    batch_id: Mapped[int | None] = mapped_column(ForeignKey("inventory_batches.id"), nullable=True)
+    is_read: Mapped[bool] = mapped_column(default=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), index=True)

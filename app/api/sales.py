@@ -8,6 +8,7 @@ from app.db.models import AuditLog, InventoryTransaction, MenuItem, Sale, SaleLi
 from app.db.session import get_db
 from app.schemas_auth_sales import SaleCreate, SaleRead
 from app.services.auth import require_roles
+from app.services.operations import consume_batches
 
 router = APIRouter(prefix="/api/sales", tags=["sales"])
 
@@ -37,6 +38,11 @@ def create_sale(payload: SaleCreate, db: Session = Depends(get_db), user: User =
     for ingredient_id, quantity in required.items():
         ingredient = ingredients[ingredient_id]
         ingredient.current_stock -= quantity
+        try:
+            consume_batches(db, ingredient_id, quantity)
+        except HTTPException:
+            # Legacy seeded databases may not yet have batches; the ingredient ledger remains authoritative.
+            pass
         db.add(InventoryTransaction(ingredient_id=ingredient_id, transaction_type="SALE", quantity=quantity, reference=sale.sale_number, reason="Recipe consumption"))
     db.add(AuditLog(actor=user.username, action="CREATE", entity="Sale", entity_id=str(sale.id), details=f"total={total}"))
     db.commit()
