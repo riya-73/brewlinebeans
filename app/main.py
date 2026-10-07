@@ -1,4 +1,5 @@
-from contextlib import asynccontextmanager
+import asyncio
+from contextlib import asynccontextmanager, suppress
 from datetime import UTC, datetime
 from decimal import Decimal
 
@@ -25,7 +26,7 @@ from app.db.models import (
     Supplier,
     User,
 )
-from app.db.session import get_db, init_db
+from app.db.session import SessionLocal, get_db, init_db
 from app.schemas import (
     ForecastRead,
     HealthRead,
@@ -39,6 +40,7 @@ from app.schemas import (
 )
 from app.services.auth import require_roles
 from app.services.inventory import apply_adjustment, days_of_cover, get_ingredient, stock_status
+from app.services.operations import run_alert_scan
 
 settings = get_settings()
 
@@ -46,7 +48,19 @@ settings = get_settings()
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     init_db()
-    yield
+    async def scheduler() -> None:
+        while True:
+            await asyncio.sleep(settings.alert_scan_interval_minutes * 60)
+            with SessionLocal() as db:
+                run_alert_scan(db)
+
+    task = asyncio.create_task(scheduler())
+    try:
+        yield
+    finally:
+        task.cancel()
+        with suppress(asyncio.CancelledError):
+            await task
 
 
 app = FastAPI(title=settings.app_name, version="1.0.0", description="Decision-support API for café inventory and procurement.", lifespan=lifespan)

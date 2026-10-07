@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./brewline.db"
     secret_key: str = "change-me-in-production"
     cors_origins: str = "http://localhost:8000,http://localhost:5173"
+    alert_scan_interval_minutes: int = 15
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
