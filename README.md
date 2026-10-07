@@ -2,14 +2,6 @@
 
 **Brewline Beans** is a predictive café inventory and supplier optimization platform. It began as a static café management portal and now includes a Python/FastAPI backend, normalized persistence model, auditable inventory transactions, supplier recommendations, reorder analytics, automated tests and reproducible development tooling.
 
-## Why this is a master's-level project
-
-The project is designed around this research question:
-
-> Can a demand-aware inventory and supplier decision-support system reduce stockout risk and procurement cost compared with static reorder thresholds and manual supplier selection?
-
-The current implementation provides the production foundation for that study: inventory and procurement domain models, forecasting baselines, reorder-point recommendations, multi-criteria supplier ranking, a documented REST API and CI checks.
-
 ## Features
 
 - FastAPI REST API with OpenAPI documentation.
