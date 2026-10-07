@@ -1,2 +1,85 @@
-# brewlinebeans
-Cafe Management portal
+# Brewline Beans
+
+**Brewline Beans** is a predictive café inventory and supplier optimization platform. It began as a static café management portal and now includes a Python/FastAPI backend, normalized persistence model, auditable inventory transactions, supplier recommendations, reorder analytics, automated tests and reproducible development tooling.
+
+## Why this is a master's-level project
+
+The project is designed around this research question:
+
+> Can a demand-aware inventory and supplier decision-support system reduce stockout risk and procurement cost compared with static reorder thresholds and manual supplier selection?
+
+The current implementation provides the production foundation for that study: inventory and procurement domain models, forecasting baselines, reorder-point recommendations, multi-criteria supplier ranking, a documented REST API and CI checks.
+
+## Features
+
+- FastAPI REST API with OpenAPI documentation.
+- SQLAlchemy persistence with SQLite by default and PostgreSQL support through Docker.
+- Ingredient, menu, recipe, supplier, purchase-order, forecast and inventory-transaction models.
+- Auditable `RECEIPT`, `SALE`, `WASTE` and `ADJUSTMENT` stock movements.
+- Dynamic stock health classification and reorder-point recommendations.
+- Transparent supplier ranking based on price, lead time, quality and reliability.
+- Deterministic seed data for local demos.
+- Pytest tests, Ruff linting, coverage reporting and GitHub Actions CI.
+- Existing static UI retained as a visual prototype while the API becomes the source of truth.
+
+## Quick start
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e '.[dev]'
+python -m scripts.seed
+uvicorn app.main:app --reload
+```
+
+Open:
+
+- API: http://localhost:8000
+- Swagger UI: http://localhost:8000/docs
+- ReDoc: http://localhost:8000/redoc
+- Health: http://localhost:8000/health
+
+## Example API calls
+
+```bash
+curl http://localhost:8000/api/inventory
+curl http://localhost:8000/api/suppliers/1/recommendations
+curl 'http://localhost:8000/api/analytics/reorder/1?daily_demand=2&lead_time_days=3'
+curl -X POST 'http://localhost:8000/api/inventory/1/transactions' \\
+  -H 'Content-Type: application/json' \\
+  -d '{"quantity": 2, "transaction_type": "WASTE", "reason": "Daily spoilage"}'
+```
+
+## Docker
+
+```bash
+docker compose up --build
+```
+
+The Docker stack starts PostgreSQL and the API. The default local development mode uses SQLite so that the project can be run without infrastructure.
+
+## Test and quality checks
+
+```bash
+pytest --cov=app --cov-report=term-missing
+ruff check app tests scripts
+```
+
+## Project structure
+
+- `app/main.py`: FastAPI application and routes.
+- `app/db/models.py`: normalized SQLAlchemy domain model.
+- `app/services/`: business rules such as inventory adjustments.
+- `app/analytics/`: forecasting, reorder and supplier-ranking logic.
+- `scripts/seed.py`: reproducible demonstration data.
+- `tests/`: domain and API tests.
+- `docs/`: architecture and data dictionary.
+- `MASTERS_PROJECT_ROADMAP.md`: full implementation and dissertation roadmap.
+
+## Research roadmap
+
+The next research iteration should add daily sales data, time-series cross-validation, Holt-Winters/SARIMA/gradient-boosting comparisons, inventory-policy simulation, supplier-allocation constraints, confidence intervals and a usability study. The baseline should remain fixed-threshold replenishment plus cheapest-supplier selection.
+
+## License
+
+This project is provided for academic and educational use. Add an institutional or open-source license before distributing it publicly.
