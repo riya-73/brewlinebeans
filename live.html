@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Live Operations — Brewline Coffee Co.</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<script src="layout.js"></script>
+<script>
+renderLayout('live.html');
+const root = document.getElementById('page-content');
+root.innerHTML = `<div class="container"><span class="page-eyebrow">API-backed operations</span><h1 class="page-title" style="font-size:clamp(1.75rem,4vw,2.5rem);">Live Inventory Control</h1><p class="page-desc">This view reads from the Python backend rather than the static demo dataset.</p><div id="live-status" class="card" style="padding:1rem;margin:1.5rem 0;">Loading live inventory…</div><div class="card"><div class="table-wrap"><table><thead><tr><th>Ingredient</th><th class="right">Stock</th><th class="right">Reorder level</th><th>Unit</th><th>Status</th><th>Action</th></tr></thead><tbody id="live-rows"></tbody></table></div></div></div>`;
+const api = async path => { const response = await fetch(path); if (!response.ok) throw new Error(await response.text()); return response.json(); };
+const badge = status => `<span class="badge ${status === 'Healthy' ? 'healthy' : status === 'Critical' ? 'critical' : 'low'}">${status}</span>`;
+(async () => {
+  try {
+    const items = await api('/api/inventory');
+    document.getElementById('live-status').textContent = `Connected to Brewline API · ${items.length} ingredients loaded`;
+    document.getElementById('live-rows').innerHTML = items.map(i => `<tr><td class="strong">${i.name}</td><td class="right">${i.current_stock}</td><td class="right">${i.reorder_level}</td><td>${i.unit}</td><td>${badge(i.status)}</td><td><button class="filter-pill sm" onclick="recommend(${i.id}, '${i.name.replace(/'/g, "\\'")}')">Reorder analysis</button></td></tr>`).join('');
+  } catch (error) { document.getElementById('live-status').textContent = `API unavailable: ${error.message}. Start with uvicorn app.main:app --reload.`; }
+})();
+async function recommend(id, name) {
+  const result = await api(`/api/analytics/reorder/${id}?daily_demand=1&lead_time_days=2`);
+  alert(`${name}: ${result.should_order ? 'Order recommended' : 'No order needed'} · recommended quantity ${result.recommended_quantity}`);
+}
+</script>
+</body>
+</html>

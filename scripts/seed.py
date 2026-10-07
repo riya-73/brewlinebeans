@@ -1,7 +1,15 @@
 from sqlalchemy import select
 
-from app.db.models import Ingredient, InventoryTransaction, MenuItem, RecipeIngredient, Supplier
+from app.db.models import (
+    Ingredient,
+    InventoryTransaction,
+    MenuItem,
+    RecipeIngredient,
+    Supplier,
+    User,
+)
 from app.db.session import SessionLocal, init_db
+from app.services.auth import hash_password
 
 INGREDIENTS = [
     ("Coffee Beans", "kg", 48, 25), ("Milk", "L", 120, 80), ("Sugar", "kg", 22, 15),
@@ -46,6 +54,7 @@ def seed() -> None:
             db.add(Supplier(name=name, ingredient_id=ingredients[ingredient].id, price_per_unit=price, lead_time_days=lead, quality_score=quality, reliability=reliability))
         for item in ingredients.values():
             db.add(InventoryTransaction(ingredient_id=item.id, transaction_type="ADJUSTMENT", quantity=item.current_stock, reason="Initial seed stock"))
+        db.add(User(username="manager", password_hash=hash_password("BrewlineDemo123!"), role="manager"))
         db.commit()
         print(f"Seeded {len(ingredients)} ingredients and {len(supplier_data)} suppliers.")
 

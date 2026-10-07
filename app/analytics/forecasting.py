@@ -30,3 +30,18 @@ def reorder_recommendation(current_stock: Decimal, reorder_level: Decimal, daily
     reorder_point = demand_during_lead + safety_stock
     order_quantity = max(0.0, reorder_point * 2 - float(current_stock))
     return {"reorder_point": round(reorder_point, 3), "safety_stock": round(safety_stock, 3), "recommended_quantity": round(order_quantity, 3), "should_order": float(current_stock) <= reorder_point}
+
+
+def holt_winters_forecast(values: list[float], horizon: int = 7, seasonal_periods: int = 7) -> list[float]:
+    """Forecast with additive Holt-Winters when enough observations exist."""
+    if len(values) < max(2 * seasonal_periods, 14):
+        return [round(moving_average(values, min(seasonal_periods, len(values))), 4)] * horizon
+    from statsmodels.tsa.holtwinters import ExponentialSmoothing
+
+    model = ExponentialSmoothing(values, trend="add", seasonal="add", seasonal_periods=seasonal_periods, initialization_method="estimated")
+    return [round(max(float(value), 0), 4) for value in model.fit(optimized=True).forecast(horizon)]
+
+
+def compare_forecasters(values: list[float], horizon: int = 7) -> dict:
+    return {"moving_average": [float(row["predicted_quantity"]) for row in forecast(values, horizon)],
+            "holt_winters": holt_winters_forecast(values, horizon)}

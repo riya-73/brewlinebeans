@@ -85,3 +85,43 @@ class Forecast(Base):
     model_name: Mapped[str] = mapped_column(String(80))
     lower_bound: Mapped[Decimal | None] = mapped_column(Numeric(12, 3), nullable=True)
     upper_bound: Mapped[Decimal | None] = mapped_column(Numeric(12, 3), nullable=True)
+
+
+class User(Base):
+    __tablename__ = "users"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    username: Mapped[str] = mapped_column(String(80), unique=True, index=True)
+    password_hash: Mapped[str] = mapped_column(String(255))
+    role: Mapped[str] = mapped_column(String(30), default="viewer")
+    is_active: Mapped[bool] = mapped_column(default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class Sale(Base):
+    __tablename__ = "sales"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    sale_number: Mapped[str] = mapped_column(String(40), unique=True, index=True)
+    total_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), index=True)
+    lines: Mapped[list["SaleLine"]] = relationship(back_populates="sale", cascade="all, delete-orphan")
+
+
+class SaleLine(Base):
+    __tablename__ = "sale_lines"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    sale_id: Mapped[int] = mapped_column(ForeignKey("sales.id"), index=True)
+    menu_item_id: Mapped[int] = mapped_column(ForeignKey("menu_items.id"))
+    quantity: Mapped[int] = mapped_column(Integer)
+    unit_price: Mapped[Decimal] = mapped_column(Numeric(10, 2))
+    sale: Mapped[Sale] = relationship(back_populates="lines")
+
+
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    actor: Mapped[str] = mapped_column(String(80), default="system")
+    action: Mapped[str] = mapped_column(String(80), index=True)
+    entity: Mapped[str] = mapped_column(String(80))
+    entity_id: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    details: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), index=True)

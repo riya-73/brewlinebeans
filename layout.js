@@ -22,6 +22,7 @@ const nav = [
   { href: 'suppliers.html', label: 'Suppliers', icon: Icons.truck },
   { href: 'purchases.html', label: 'Purchases', icon: Icons.receipt },
   { href: 'analytics.html', label: 'Analytics', icon: Icons.barchart },
+  { href: 'live.html', label: 'Live API', icon: Icons.dashboard },
 ];
 
 function renderLayout(activePage) {

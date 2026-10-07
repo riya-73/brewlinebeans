@@ -10,9 +10,13 @@
 - Auditable `RECEIPT`, `SALE`, `WASTE` and `ADJUSTMENT` stock movements.
 - Dynamic stock health classification and reorder-point recommendations.
 - Transparent supplier ranking based on price, lead time, quality and reliability.
+- Role-based authentication with signed bearer tokens and audit events.
+- Sales workflow that deducts recipe ingredients atomically from inventory.
+- Baseline evaluation and fixed-threshold versus dynamic-policy simulation.
 - Deterministic seed data for local demos.
 - Pytest tests, Ruff linting, coverage reporting and GitHub Actions CI.
 - Existing static UI retained as a visual prototype while the API becomes the source of truth.
+- `live.html` provides an API-backed operations view for live inventory and reorder analysis.
 
 ## Quick start
 
@@ -31,12 +35,15 @@ Open:
 - ReDoc: http://localhost:8000/redoc
 - Health: http://localhost:8000/health
 
+The seeded demo manager is `manager` with password `BrewlineDemo123!`. Change or remove this account before any deployment.
+
 ## Example API calls
 
 ```bash
 curl http://localhost:8000/api/inventory
 curl http://localhost:8000/api/suppliers/1/recommendations
 curl 'http://localhost:8000/api/analytics/reorder/1?daily_demand=2&lead_time_days=3'
+curl -X POST 'http://localhost:8000/api/analytics/simulate?initial_stock=10&reorder_point=5&order_quantity=10' -H 'Content-Type: application/json' -d '[8,10,2,12,4,9]'
 curl -X POST 'http://localhost:8000/api/inventory/1/transactions' \\
   -H 'Content-Type: application/json' \\
   -d '{"quantity": 2, "transaction_type": "WASTE", "reason": "Daily spoilage"}'
